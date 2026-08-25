@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rigged 21</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500;700;900&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --felt:#0b3d2e;
+    --felt-dark:#072920;
+    --felt-line: rgba(201,162,39,0.28);
+    --brass:#c9a227;
+    --brass-bright:#e9c65a;
+    --paper:#ede4d3;
+    --paper-dark:#ddd0b3;
+    --ink:#2a1f14;
+    --rigged:#b33a3a;
+    --card-white:#fbf7ee;
+    --card-black:#201a12;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top, #123f2e 0%, var(--felt-dark) 70%);
+    color:var(--paper);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height:100vh;
+    padding:18px;
+  }
+  .stage{max-width:1100px;margin:0 auto;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;
+    border-bottom:2px solid var(--brass);
+    padding-bottom:12px;margin-bottom:16px;
+  }
+  .brand h1{
+    font-family:"Roboto Slab", serif; font-weight:900; letter-spacing:0.5px;
+    margin:0; font-size:clamp(22px,4vw,32px); color:var(--brass-bright);
+    text-shadow:0 2px 0 rgba(0,0,0,0.4);
+  }
+  .brand p{margin:2px 0 0; font-family:"Special Elite", monospace; font-size:12px; color:var(--paper-dark); letter-spacing:0.5px;}
+  .topbar-stats{display:flex; gap:18px; align-items:center; flex-wrap:wrap;}
+  .stat{text-align:right;}
+  .stat .label{font-family:"Special Elite",monospace; font-size:10px; color:var(--brass); text-transform:uppercase; letter-spacing:1px;}
+  .stat .value{font-family:"Roboto Slab",serif; font-weight:700; font-size:20px; color:var(--paper);}
+
+  .reveal-toggle{
+    display:flex; align-items:center; gap:8px; font-family:"Special Elite",monospace; font-size:12px;
+    background:rgba(0,0,0,0.25); border:1px solid var(--brass); border-radius:20px; padding:6px 12px;
+    cursor:pointer; user-select:none;
+  }
+  .reveal-toggle .dot{width:10px;height:10px;border-radius:50%; background:#5a5a5a; transition:background .2s;}
+  .reveal-toggle.on .dot{background:var(--rigged); box-shadow:0 0 8px var(--rigged);}
+
+  /* ---------- Table ---------- */
+  .table{
+    position:relative;
+    background:
+      radial-gradient(ellipse at center, #0f4a37 0%, var(--felt) 60%, var(--felt-dark) 100%);
+    border-radius:16px;
+    border:6px solid #5a4013;
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.55), 0 10px 30px rgba(0,0,0,0.5);
+    padding:22px 18px 18px;
+    overflow:hidden;
+    min-height:520px;
+    display:flex; flex-direction:column;
+  }
+  .table::before{
+    content:"";
+    position:absolute; inset:14px;
+    border:1px solid var(--felt-line);
+    border-radius:10px;
+    pointer-events:none;
+  }
+
+  .zone{position:relative; z-index:1;}
+  .zone .who, .player-panel .who{
+    font-family:"Special Elite", monospace; font-size:11px; text-transform:uppercase;
+    letter-spacing:2px; color:var(--brass-bright); display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .zone .total-badge, .player-panel .total-badge{
+    background:rgba(0,0,0,0.35); border:1px solid var(--brass); border-radius:12px;
+    padding:1px 10px; font-family:"Roboto Slab",serif; font-size:12px; color:var(--paper);
+  }
+  .cards{display:flex; gap:8px; margin:8px 0 4px; min-height:96px; flex-wrap:wrap;}
+  .card{
+    width:60px;height:86px; border-radius:7px; background:var(--card-white);
+    box-shadow:0 3px 8px rgba(0,0,0,0.45); position:relative;
+    display:flex; flex-direction:column; justify-content:space-between; padding:5px 6px;
+    font-family:"Roboto Slab", serif; font-weight:700; font-size:16px;
+    animation: dealIn .28s ease-out;
+    flex-shrink:0;
+  }
+  @keyframes dealIn{ from{opacity:0; transform:translateY(-14px) rotate(-4deg);} to{opacity:1; transform:none;} }
+  .card.red{color:#a02020;} .card.black{color:var(--card-black);}
+  .card .corner{line-height:1; font-size:15px;}
+  .card .suit-big{position:absolute; bottom:6px; right:7px; font-size:20px;}
+  .card.faded{
+    opacity:0.4;
+    filter:grayscale(35%);
+  }
+  .card.marked::after{
+    content:""; position:absolute; top:4px; right:4px; width:7px; height:7px;
+    border-radius:50%; background:var(--rigged); box-shadow:0 0 4px var(--rigged);
+  }
+
+  /* ---------- Player panels ---------- */
+  .players-row{display:flex; gap:10px; flex-wrap:wrap; margin:10px 0 2px; position:relative; z-index:1;}
+  .player-panel{
+    flex:1 1 190px; min-width:168px;
+    background:rgba(0,0,0,0.22); border:1px solid var(--felt-line); border-radius:10px;
+    padding:10px 12px; transition:border-color .2s, box-shadow .2s;
+  }
+  .player-panel.active{
+    border-color:var(--brass-bright);
+    box-shadow:0 0 0 1px var(--brass-bright), 0 0 14px rgba(233,198,90,0.35);
+  }
+  .player-panel .player-sub{
+    font-family:"Special Elite", monospace; font-size:10.5px; color:var(--paper-dark); margin:3px 0 6px;
+  }
+  .player-panel .cards{min-height:78px; margin:4px 0;}
+  .player-panel .card{width:48px; height:70px; font-size:13px; padding:4px 5px;}
+  .player-panel .card .suit-big{font-size:15px; bottom:4px; right:5px;}
+  .mini-result{
+    font-family:"Roboto Slab",serif; font-weight:700; font-size:11px; padding:1px 7px; border-radius:8px;
+  }
+  .mini-result.win{color:#8fe3a8; background:rgba(60,160,90,0.22);}
+  .mini-result.lose{color:#e39a9a; background:rgba(160,60,60,0.22);}
+  .mini-result.push{color:var(--brass-bright); background:rgba(160,140,60,0.22);}
+
+  .dealer-line{
+    text-align:center; font-family:"Special Elite",monospace; font-size:12px; color:var(--paper-dark);
+    margin:2px 0;
+  }
+
+  .hint{
+    margin:10px 0 6px; font-family:"Special Elite", monospace; font-size:13px;
+    color:var(--paper-dark); min-height:18px; position:relative; z-index:1;
+  }
+  .hint b{color:var(--brass-bright);}
+
+  .controls{margin-top:auto; display:flex; gap:10px; flex-wrap:wrap; align-items:center; position:relative; z-index:1;}
+  button{
+    font-family:"Roboto Slab", serif; font-weight:700; font-size:14px;
+    background:linear-gradient(180deg, var(--brass-bright), var(--brass));
+    color:#2a1f14; border:none; border-radius:6px; padding:10px 18px;
+    cursor:pointer; box-shadow:0 3px 0 #7a5f10, 0 4px 8px rgba(0,0,0,0.4);
+    transition:transform .05s;
+  }
+  button:active{transform:translateY(2px); box-shadow:0 1px 0 #7a5f10;}
+  button:disabled{opacity:0.35; cursor:not-allowed; box-shadow:none;}
+  button.secondary{background:linear-gradient(180deg,#3a3a3a,#232323); color:var(--paper);}
+  button.big{padding:12px 26px; font-size:15px;}
+
+  .bet-row{display:flex; align-items:center; gap:8px; font-family:"Special Elite",monospace; font-size:12px;}
+  .bet-row .amt{font-family:"Roboto Slab",serif; font-weight:700; color:var(--brass-bright); font-size:15px; min-width:30px; text-align:center;}
+  .bet-row button{padding:6px 10px; font-size:13px;}
+
+  .footer-rig{
+    margin-top:16px; display:flex; flex-wrap:wrap; gap:16px; align-items:center;
+    background:rgba(0,0,0,0.25); border:1px solid var(--felt-line); border-radius:10px; padding:12px 16px;
+    font-family:"Special Elite", monospace; font-size:12px;
+  }
+  .footer-rig input[type=range]{width:180px; accent-color:var(--rigged);}
+
+  .shoe-reveal{
+    margin-top:14px; background:rgba(179,58,58,0.08); border:1px dashed var(--rigged);
+    border-radius:10px; padding:10px 14px;
+  }
+  .shoe-label{
+    font-family:"Special Elite",monospace; font-size:11px; color:var(--rigged);
+    text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px;
+  }
+  .shoe-strip{
+    display:flex; gap:4px; overflow-x:auto; white-space:nowrap; padding-bottom:6px;
+  }
+  .shoe-chip{
+    flex-shrink:0; display:inline-flex; align-items:center; justify-content:center;
+    width:34px; height:34px; border-radius:5px; background:var(--card-white);
+    font-family:"Roboto Slab",serif; font-weight:700; font-size:12px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.45);
+    transition:opacity .4s, filter .4s;
+  }
+  .shoe-chip.red{color:#a02020;} .shoe-chip.black{color:var(--card-black);}
+  .shoe-chip.faded{ opacity:0.2; filter:grayscale(70%); }
+
+  .explainer{
+    margin-top:16px;
+    background:
+      repeating-linear-gradient(var(--paper), var(--paper) 27px, var(--paper-dark) 28px),
+      var(--paper);
+    color:var(--ink);
+    border-radius:6px;
+    padding:22px 26px 26px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(0,0,0,0.06);
+  }
+  .explainer h2{
+    font-family:"Roboto Slab", serif; font-weight:900; font-size:20px;
+    margin:0 0 10px; border-bottom:2px solid var(--brass); padding-bottom:8px;
+  }
+  .explainer h3{
+    font-family:"Special Elite", monospace; font-size:12.5px; text-transform:uppercase;
+    letter-spacing:1.5px; color:var(--rigged); margin:18px 0 6px;
+  }
+  .explainer h3:first-of-type{margin-top:10px;}
+  .explainer p{
+    font-family:system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size:14px; line-height:1.6; margin:0 0 4px;
+  }
+  .explainer b{color:var(--ink);}
+
+  .credit{
+    text-align:center; margin-top:14px; font-family:"Special Elite", monospace;
+    font-size:11px; color:var(--paper-dark); letter-spacing:1px; opacity:0.7;
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>RIGGED 21</h1>
+      <p>Automatic shuffler or is it?</p>
+    </div>
+    <div class="topbar-stats">
+      <div class="stat"><div class="label">Round</div><div class="value" id="roundNum">0</div></div>
+      <div class="reveal-toggle" id="revealToggle"><span class="dot"></span><span id="revealLabel">Reveal Mode: OFF</span></div>
+    </div>
+  </div>
+
+  <main class="table">
+      <div class="zone" id="dealerZone">
+        <div class="who">Dealer <span class="total-badge" id="dealerTotal">–</span></div>
+        <div class="cards" id="dealerCards"></div>
+      </div>
+
+      <div id="resultSlot"></div>
+
+      <div class="players-row" id="playersRow"></div>
+
+      <div class="hint" id="hint"></div>
+
+      <div class="controls">
+        <div class="bet-row">
+          <span>Bet/Player</span>
+          <button id="betDown">–</button>
+          <span class="amt" id="betAmt">$25</span>
+          <button id="betUp">+</button>
+        </div>
+        <div class="bet-row">
+          <span>Players</span>
+          <button id="playersDown">–</button>
+          <span class="amt" id="playersAmt">2</span>
+          <button id="playersUp">+</button>
+        </div>
+        <button class="big" id="dealBtn">Deal</button>
+        <button id="hitBtn" disabled>Hit</button>
+        <button id="standBtn" disabled>Stand</button>
+        <button id="doubleBtn" disabled>Double</button>
+      </div>
+    </main>
+
+  <div class="footer-rig">
+    <label for="rigSlider"><b>Pit Boss Aggression</b> — how often the shoe gets reshuffled from scratch until the odds favor the house</label>
+    <input type="range" id="rigSlider" min="0" max="100" value="85">
+    <span id="rigVal">85%</span>
+    <span style="opacity:0.6;">(0% = the first honest shuffle is dealt no matter what; 100% = fresh shuffles get tried until every player's predicted basic-strategy line naturally loses to the dealer, then that one untouched shoe is dealt straight through)</span>
+  </div>
+
+  <div class="shoe-reveal" id="shoeReveal" style="display:none;">
+    <div class="shoe-label">⚑ The shoe, exactly as shuffled — next card first, undealt cards only</div>
+    <div class="shoe-strip" id="shoeStrip"></div>
+  </div>
+
+  <div class="explainer">
+    <h2>How This Works</h2>
+    <p>This isn't a card-counting trick or a rigged random number generator — nothing is ever swapped, reordered, or adjusted mid-hand. The whole scam happens <b>before a single card is dealt</b>, by testing whole shuffles and only using the ones that already work out.</p>
+
+    <h3>1. The shoe</h3>
+    <p>Six standard 52-card decks (312 cards total) are combined and shuffled together, exactly like a real casino shoe.</p>
+
+    <h3>2. The prediction</h3>
+    <p>Before dealing, the game runs a full simulation of the hand off that shuffle: one card round-robin to each player then the dealer, twice — then plays out <b>every player's turn using the exact same basic-strategy hint shown on the real table</b> (hit, stand, or double), and finally plays the dealer's turn using the same house rule the real dealer uses (hit below 17, hit on hard 17, stand on soft 17 and above).</p>
+
+    <h3>3. The test</h3>
+    <p>The simulation checks one thing: does the dealer's resulting total beat the best surviving predicted hand at the table? (Anyone predicted to bust is already a lost cause, regardless of the dealer's total.) If yes, that exact shuffle — untouched — becomes the shoe for the hand. If no, the <b>entire shuffle is thrown out</b> and a fresh one is shuffled and tested again, up to 500 times, until one naturally works.</p>
+
+    <h3>4. The deal</h3>
+    <p>Whichever shuffle passes the test is dealt from the top, card by card, exactly as it came out of the shuffle. Nothing about it is touched again once play starts.</p>
+
+    <h3>Why it actually works</h3>
+    <p>The test only checks what happens if everyone plays their hint exactly. If every player does that in the real hand, they draw the identical cards the simulation already tested — so the outcome it predicted is the outcome they get, every time. At 100% Pit Boss Aggression, that means a fully compliant table loses <i>every single hand</i>, deterministically.</p>
+    <p>But the moment someone deviates from the hint — hits when it says stand, stands early, anything off-script — they (and everyone drawing after them from that shared shoe) start pulling cards from a part of the shoe the test never checked. The guarantee doesn't adapt to that; it just stops applying. That's why breaking basic strategy can accidentally win a hand here, even though it's normally the worse play.</p>
+
+    <h3>The slider and the reveal</h3>
+    <p><b>Pit Boss Aggression</b> is simply the odds that the game even bothers running this whole search for a given round. At 0%, the first honest shuffle is always dealt, no matter what it does to anyone. At 100%, it always searches until it finds a shuffle that sweeps the table. <b>Reveal Mode</b> shows the exact fixed order of the current shoe and marks a rigged round's dealer cards, so you can prove all of this happened before a card was even dealt.</p>
+  </div>
+
+  <div class="credit">Developed by Paul Pham</div>
+
+</div>
+
+<script>
+const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+const SUITS = [{s:"♠",c:"black"},{s:"♣",c:"black"},{s:"♥",c:"red"},{s:"♦",c:"red"}];
+const MAX_PLAYERS = 6;
+const NUM_DECKS = 6;
+
+let deck = [];
+let fullShoe = []; // fixed snapshot of this round's shoe order, for the reveal strip
+let players = [];      // {name, bankroll, currentBet, hand, result}
+let activePlayerIndex = 0;
+let dealerHand = [];
+let roundRigged = false; // whether THIS round's untouched shoe was selected via reshuffling
+let roundAttempts = 1;   // how many fresh shuffles it took to find one
+let bet = 25;             // the bet each player antes next round
+let round = 0;
+let rigIntensity = 85;
+let revealMode = false;
+let state = "BETTING"; // BETTING, PLAYER_TURN, DEALER_TURN, ROUND_OVER
+
+function cardValue(rank){
+  if(rank==="A") return 11;
+  if(["J","Q","K"].includes(rank)) return 10;
+  return parseInt(rank,10);
+}
+
+function freshDeck(){
+  const d = [];
+  for(let n=0; n<NUM_DECKS; n++){
+    for(const rank of RANKS){
+      for(const suit of SUITS){
+        d.push({rank, suit:suit.s, color:suit.c, value:cardValue(rank)});
+      }
+    }
+  }
+  for(let i=d.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [d[i],d[j]]=[d[j],d[i]];
+  }
+  return d;
+}
+
+function handValue(cards){
+  let total = cards.reduce((s,c)=>s+c.value,0);
+  let aces = cards.filter(c=>c.rank==="A").length;
+  while(total>21 && aces>0){ total-=10; aces--; }
+  const soft = aces>0 && total<=21;
+  return {total, soft};
+}
+
+function isBust(cards){ return handValue(cards).total>21; }
+
+// House rule: dealer hits on hard 17 (17 with no ace counted as 11), but
+// stands on soft 17 and everything 18+. Used identically by the real
+// dealer's turn and by the rig's prediction, so they never disagree.
+function dealerShouldHit(cards){
+  const {total, soft} = handValue(cards);
+  if(total>21) return false;
+  if(total<17) return true;
+  if(total===17 && !soft) return true;
+  return false;
+}
+
+/* ---------------- Basic strategy hint ---------------- */
+function getHint(cards, dealerUpVal){
+  if(cards.length===2 && cards[0].value===cards[1].value){
+    const v = cards[0].value;
+    if(v===11) return "SPLIT";
+    if(v===10) return "STAND";
+    if(v===9) return (dealerUpVal>=2&&dealerUpVal<=9&&dealerUpVal!==7)?"SPLIT":"STAND";
+    if(v===8) return "SPLIT";
+    if(v===7) return (dealerUpVal>=2&&dealerUpVal<=7)?"SPLIT":"HIT";
+    if(v===6) return (dealerUpVal>=2&&dealerUpVal<=6)?"SPLIT":"HIT";
+    if(v===5) return (dealerUpVal>=2&&dealerUpVal<=9)?"DOUBLE":"HIT";
+    if(v===4) return (dealerUpVal===5||dealerUpVal===6)?"SPLIT":"HIT";
+    return (dealerUpVal>=2&&dealerUpVal<=7)?"SPLIT":"HIT"; // 2,2 / 3,3
+  }
+  const {total, soft} = handValue(cards);
+  if(soft){
+    if(total>=19) return "STAND";
+    if(total===18) return (dealerUpVal>=2&&dealerUpVal<=6)?"DOUBLE":((dealerUpVal===7||dealerUpVal===8)?"STAND":"HIT");
+    if(total===17) return (dealerUpVal>=3&&dealerUpVal<=6)?"DOUBLE":"HIT";
+    if(total===15||total===16) return (dealerUpVal>=4&&dealerUpVal<=6)?"DOUBLE":"HIT";
+    if(total===13||total===14) return (dealerUpVal===5||dealerUpVal===6)?"DOUBLE":"HIT";
+    return "HIT";
+  }
+  if(total>=17) return "STAND";
+  if(total>=13&&total<=16) return (dealerUpVal>=2&&dealerUpVal<=6)?"STAND":"HIT";
+  if(total===12) return (dealerUpVal>=4&&dealerUpVal<=6)?"STAND":"HIT";
+  if(total===11) return (dealerUpVal>=2&&dealerUpVal<=10)?"DOUBLE":"HIT";
+  if(total===10) return (dealerUpVal>=2&&dealerUpVal<=9)?"DOUBLE":"HIT";
+  if(total===9) return (dealerUpVal>=3&&dealerUpVal<=6)?"DOUBLE":"HIT";
+  return "HIT";
+}
+
+/* ---------------- The rig ---------------- */
+// Plays an entire N-player hand out in simulation, off an untouched shuffle:
+// one card round-robin to each player then the dealer, twice, then every
+// player's predicted line follows the same basic-strategy hint the real
+// table shows, then the dealer hits normally (hard 17 or below) with no
+// interference. Nothing about the shoe is touched — this only reads it.
+function simulateHand(shuffledDeck, n){
+  const sim = [...shuffledDeck];
+  const simPlayers = Array.from({length:n}, ()=>[]);
+  const simDealer = [];
+
+  for(let i=0;i<n;i++) simPlayers[i].push(sim.shift());
+  simDealer.push(sim.shift());
+  for(let i=0;i<n;i++) simPlayers[i].push(sim.shift());
+  simDealer.push(sim.shift());
+
+  const dealerUpVal = simDealer[0].value;
+  const playerTotals = [];
+  for(let i=0;i<n;i++){
+    let guard = 0;
+    while(guard<12){
+      guard++;
+      const hint = getHint(simPlayers[i], dealerUpVal); // SPLIT isn't offered at this table — played as a hit
+      if(hint==="STAND") break;
+      if(hint==="DOUBLE"){ simPlayers[i].push(sim.shift()); break; }
+      simPlayers[i].push(sim.shift());
+      if(handValue(simPlayers[i]).total>21) break;
+    }
+    playerTotals.push(handValue(simPlayers[i]).total);
+  }
+
+  const anyoneStillIn = playerTotals.some(t=>t<=21);
+  if(anyoneStillIn){
+    while(dealerShouldHit(simDealer)){
+      if(!sim.length) break;
+      simDealer.push(sim.shift());
+    }
+  }
+  return { playerTotals, dealerTotal: handValue(simDealer).total };
+}
+
+// The dealer only needs to beat the best surviving predicted hand to sweep
+// the whole table — anyone who's busted in the prediction is already lost
+// regardless of the dealer's own total.
+function dealerWinsPrediction(shuffledDeck, n){
+  const {playerTotals, dealerTotal} = simulateHand(shuffledDeck, n);
+  const contenders = playerTotals.filter(t=>t<=21);
+  if(contenders.length===0) return true;
+  if(dealerTotal>21) return false;
+  return dealerTotal>Math.max(...contenders);
+}
+
+// Runs before a single card touches the table. There is no reordering, no
+// card-swapping — a shoe is either dealt exactly as shuffled, or it's
+// discarded whole and reshuffled from scratch. Each candidate shoe is
+// tested by simulating everyone's predicted basic-strategy line straight
+// through it; if that predicted table doesn't fully favor the house, the
+// whole shoe is thrown out and a fresh one is shuffled and tested again.
+// As soon as one naturally plays out as a dealer sweep, that single,
+// untouched shuffle becomes the deck for the hand. Since this only depends
+// on every player following their hint exactly, any real deviation sends
+// that hand into territory the test never checked — the rig doesn't adapt,
+// so it can just as easily fall apart for whoever strays from it.
+function preStackDeck(n){
+  const attemptRig = Math.random()*100 < rigIntensity;
+  let candidate = freshDeck();
+  if(!attemptRig){
+    roundRigged = false; roundAttempts = 1;
+    return candidate;
+  }
+  let attempts = 1;
+  let success = dealerWinsPrediction(candidate, n);
+  while(!success && attempts<500){
+    candidate = freshDeck();
+    attempts++;
+    success = dealerWinsPrediction(candidate, n);
+  }
+  roundRigged = success;
+  roundAttempts = attempts;
+  return candidate;
+}
+
+/* ---------------- Players ---------------- */
+function setNumPlayers(n){
+  n = Math.max(1, Math.min(MAX_PLAYERS, n));
+  while(players.length<n){
+    players.push({ name:`Player ${players.length+1}`, bankroll:500, currentBet:bet, hand:[], result:null });
+  }
+  if(n<players.length) players.length = n;
+  document.getElementById("playersAmt").textContent = players.length;
+  render();
+}
+
+function currentPlayer(){ return players[activePlayerIndex]; }
+
+/* ---------------- Rendering ---------------- */
+function cardEl(card, faded, marked){
+  const el = document.createElement("div");
+  el.className = "card "+card.color+(faded?" faded":"")+(marked&&revealMode?" marked":"");
+  el.innerHTML = `<div class="corner">${card.rank}<br>${card.suit}</div><div class="suit-big">${card.suit}</div>`;
+  return el;
+}
+
+function renderPlayers(){
+  const row = document.getElementById("playersRow");
+  row.innerHTML = "";
+  players.forEach((p, idx)=>{
+    const panel = document.createElement("div");
+    const isActive = (state==="PLAYER_TURN" && idx===activePlayerIndex);
+    panel.className = "player-panel"+(isActive?" active":"");
+
+    const pv = handValue(p.hand);
+    const totalText = p.hand.length ? (pv.soft?`soft ${pv.total}`:pv.total) : "–";
+    let resultBadge = "";
+    if(p.result){
+      const r = p.result;
+      const label = r.outcome==="win" ? `+$${r.delta}` : r.outcome==="lose" ? `-$${Math.abs(r.delta)}` : "PUSH";
+      resultBadge = `<span class="mini-result ${r.outcome}">${label}</span>`;
+    }
+
+    panel.innerHTML = `
+      <div class="who">${p.name}<span class="total-badge">${totalText}</span>${resultBadge}</div>
+      <div class="player-sub">Bankroll $${p.bankroll} · Bet $${p.currentBet}</div>
+      <div class="cards"></div>
+    `;
+    const cardsEl = panel.querySelector(".cards");
+    p.hand.forEach(c=>cardsEl.appendChild(cardEl(c,false,false)));
+    row.appendChild(panel);
+  });
+}
+
+function render(){
+  document.getElementById("roundNum").textContent = round;
+  document.getElementById("betAmt").textContent = "$"+bet;
+
+  renderPlayers();
+
+  const dCardsEl = document.getElementById("dealerCards");
+  dCardsEl.innerHTML = "";
+  dealerHand.forEach((c,i)=>{
+    const fadeThis = (state==="PLAYER_TURN" && i===1);
+    dCardsEl.appendChild(cardEl(c, fadeThis, roundRigged));
+  });
+  const dv = handValue(dealerHand);
+  if(state==="PLAYER_TURN" && dealerHand.length){
+    document.getElementById("dealerTotal").textContent = dealerHand[0].value;
+  } else {
+    document.getElementById("dealerTotal").textContent = dealerHand.length? (dv.soft?`soft ${dv.total}`:dv.total) : "–";
+  }
+
+  const activeP = state==="PLAYER_TURN" ? currentPlayer() : null;
+
+  document.getElementById("hitBtn").disabled = state!=="PLAYER_TURN";
+  document.getElementById("standBtn").disabled = state!=="PLAYER_TURN";
+  document.getElementById("doubleBtn").disabled = !(activeP && activeP.hand.length===2 && activeP.bankroll>=activeP.currentBet);
+  document.getElementById("dealBtn").disabled = state==="PLAYER_TURN" || state==="DEALER_TURN";
+  const settingsLocked = (state==="PLAYER_TURN" || state==="DEALER_TURN");
+  document.getElementById("betDown").disabled = settingsLocked;
+  document.getElementById("betUp").disabled = settingsLocked;
+  document.getElementById("playersDown").disabled = settingsLocked;
+  document.getElementById("playersUp").disabled = settingsLocked;
+
+  const hintEl = document.getElementById("hint");
+  if(activeP && dealerHand.length){
+    const h = getHint(activeP.hand, dealerHand[0].value);
+    hintEl.innerHTML = `${activeP.name}'s turn — basic strategy says: <b>${h}</b>`;
+  } else {
+    hintEl.innerHTML = "";
+  }
+
+  renderShoe();
+}
+
+let shoeRenderedRound = -1;
+
+function renderShoe(){
+  const panel = document.getElementById("shoeReveal");
+  if(!revealMode){
+    panel.style.display = "none";
+    return;
+  }
+  panel.style.display = "block";
+  const strip = document.getElementById("shoeStrip");
+  const dealtCount = fullShoe.length - deck.length; // cards consumed from the front so far
+
+  if(shoeRenderedRound!==round || strip.children.length!==fullShoe.length){
+    strip.innerHTML = "";
+    fullShoe.forEach((c,i)=>{
+      const chip = document.createElement("span");
+      chip.className = "shoe-chip "+c.color+(i<dealtCount?" faded":"");
+      chip.textContent = c.rank+c.suit;
+      strip.appendChild(chip);
+    });
+    shoeRenderedRound = round;
+  } else {
+    // same round — toggle the existing nodes so the fade actually transitions
+    Array.from(strip.children).forEach((chip,i)=>{
+      chip.classList.toggle("faded", i<dealtCount);
+    });
+  }
+}
+
+/* ---------------- Game flow ---------------- */
+function startRound(){
+  deck = preStackDeck(players.length); // shoe is either dealt exactly as shuffled, or discarded whole and reshuffled
+  fullShoe = [...deck]; // fixed snapshot of the round's shoe order, for the reveal strip
+  players.forEach(p=>{ p.hand=[]; p.currentBet=bet; p.result=null; });
+  dealerHand = [];
+  round++;
+  document.getElementById("resultSlot").innerHTML = "";
+
+  for(let i=0;i<players.length;i++) players[i].hand.push(deck.shift());
+  dealerHand.push(deck.shift());
+  for(let i=0;i<players.length;i++) players[i].hand.push(deck.shift());
+  dealerHand.push(deck.shift());
+
+  activePlayerIndex = 0;
+  state = "PLAYER_TURN";
+
+  render();
+}
+
+function nextPlayerTurn(){
+  activePlayerIndex++;
+  if(activePlayerIndex>=players.length){
+    state = "DEALER_TURN";
+    render();
+    setTimeout(dealerStep, 500);
+  } else {
+    render();
+  }
+}
+
+function playerHit(){
+  const p = currentPlayer();
+  p.hand.push(deck.shift());
+  if(isBust(p.hand)){
+    render();
+    nextPlayerTurn();
+    return;
+  }
+  render();
+}
+
+function playerStand(){
+  render();
+  nextPlayerTurn();
+}
+
+function playerDouble(){
+  const p = currentPlayer();
+  if(p.bankroll<p.currentBet) return;
+  p.currentBet *= 2;
+  p.hand.push(deck.shift());
+  render();
+  nextPlayerTurn();
+}
+
+function dealerStep(){
+  const anyoneStillIn = players.some(p=>handValue(p.hand).total<=21);
+  if(!anyoneStillIn || !dealerShouldHit(dealerHand)){ finishRound(); return; }
+
+  const card = deck.shift(); // next card off the untouched shoe, nothing swapped
+  dealerHand.push(card);
+  render();
+
+  if(dealerShouldHit(dealerHand)){
+    setTimeout(dealerStep, 650);
+  } else {
+    setTimeout(finishRound, 450);
+  }
+}
+
+function finishRound(){
+  state = "ROUND_OVER";
+  const dv = handValue(dealerHand);
+
+  players.forEach(p=>{
+    const pv = handValue(p.hand);
+    let outcome, delta;
+    if(pv.total>21){ outcome="lose"; delta=-p.currentBet; }
+    else if(dv.total>21){ outcome="win"; delta=p.currentBet; }
+    else if(dv.total>pv.total){ outcome="lose"; delta=-p.currentBet; }
+    else if(pv.total>dv.total){ outcome="win"; delta=p.currentBet; }
+    else { outcome="push"; delta=0; }
+    p.bankroll += delta;
+    p.result = {outcome, delta};
+  });
+
+  const banner = document.getElementById("resultSlot");
+  banner.innerHTML = `<div class="dealer-line">Dealer stands on ${dv.total}${dv.total>21?" — bust":""}</div>`;
+
+  render();
+}
+
+/* ---------------- Controls ---------------- */
+document.getElementById("dealBtn").addEventListener("click", startRound);
+document.getElementById("hitBtn").addEventListener("click", playerHit);
+document.getElementById("standBtn").addEventListener("click", playerStand);
+document.getElementById("doubleBtn").addEventListener("click", playerDouble);
+
+document.getElementById("betUp").addEventListener("click", ()=>{ if(bet<200){ bet+=5; render(); } });
+document.getElementById("betDown").addEventListener("click", ()=>{ if(bet>5){ bet-=5; render(); } });
+
+document.getElementById("playersUp").addEventListener("click", ()=>{ setNumPlayers(players.length+1); });
+document.getElementById("playersDown").addEventListener("click", ()=>{ setNumPlayers(players.length-1); });
+
+document.getElementById("rigSlider").addEventListener("input", (e)=>{
+  rigIntensity = parseInt(e.target.value,10);
+  document.getElementById("rigVal").textContent = rigIntensity+"%";
+});
+
+document.getElementById("revealToggle").addEventListener("click", ()=>{
+  revealMode = !revealMode;
+  const t = document.getElementById("revealToggle");
+  const l = document.getElementById("revealLabel");
+  t.classList.toggle("on", revealMode);
+  l.textContent = "Reveal Mode: "+(revealMode?"ON":"OFF");
+  render();
+});
+
+setNumPlayers(2);
+</script>
+</body>
+</html>
