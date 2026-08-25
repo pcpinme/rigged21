@@ -161,6 +161,13 @@
   button:disabled{opacity:0.35; cursor:not-allowed; box-shadow:none;}
   button.secondary{background:linear-gradient(180deg,#3a3a3a,#232323); color:var(--paper);}
   button.big{padding:12px 26px; font-size:15px;}
+  button.redeal{
+    background:linear-gradient(180deg, #d9534f, var(--rigged));
+    color:var(--paper);
+    box-shadow:0 3px 0 #7a2323, 0 4px 8px rgba(0,0,0,0.4);
+    margin-left:auto;
+  }
+  button.redeal:active{box-shadow:0 1px 0 #7a2323;}
 
   .bet-row{display:flex; align-items:center; gap:8px; font-family:"Special Elite",monospace; font-size:12px;}
   .bet-row .amt{font-family:"Roboto Slab",serif; font-weight:700; color:var(--brass-bright); font-size:15px; min-width:30px; text-align:center;}
@@ -272,6 +279,7 @@
         <button id="hitBtn" disabled>Hit</button>
         <button id="standBtn" disabled>Stand</button>
         <button id="doubleBtn" disabled>Double</button>
+        <button class="redeal" id="redealBtn" disabled>↻ Redeal Same Shoe</button>
       </div>
     </main>
 
@@ -595,6 +603,7 @@ function render(){
   document.getElementById("doubleBtn").disabled = !(activeP && activeP.hand.length===2 && activeP.bankroll>=activeP.currentBet);
   document.getElementById("dealBtn").disabled = state==="PLAYER_TURN" || state==="DEALER_TURN";
   const settingsLocked = (state==="PLAYER_TURN" || state==="DEALER_TURN");
+  document.getElementById("redealBtn").disabled = settingsLocked || !fullShoe.length;
   document.getElementById("betDown").disabled = settingsLocked;
   document.getElementById("betUp").disabled = settingsLocked;
   document.getElementById("playersDown").disabled = settingsLocked;
@@ -641,9 +650,10 @@ function renderShoe(){
 }
 
 /* ---------------- Game flow ---------------- */
-function startRound(){
-  deck = preStackDeck(players.length); // shoe is either dealt exactly as shuffled, or discarded whole and reshuffled
-  fullShoe = [...deck]; // fixed snapshot of the round's shoe order, for the reveal strip
+// Deals the opening cards from whatever is currently in `deck` — shared by
+// both a fresh round and a redeal, since the only difference between them
+// is where `deck` came from.
+function dealOpeningCards(){
   players.forEach(p=>{ p.hand=[]; p.currentBet=bet; p.result=null; });
   dealerHand = [];
   round++;
@@ -658,6 +668,20 @@ function startRound(){
   state = "PLAYER_TURN";
 
   render();
+}
+
+function startRound(){
+  deck = preStackDeck(players.length); // shoe is either dealt exactly as shuffled, or discarded whole and reshuffled
+  fullShoe = [...deck]; // fixed snapshot of the round's shoe order, for the reveal strip
+  dealOpeningCards();
+}
+
+// Replays the exact same shoe order as the last round dealt — no new search,
+// no new shuffle. Same cards, same rigged/honest status, same everything.
+function redealSameShoe(){
+  if(!fullShoe.length) return;
+  deck = [...fullShoe];
+  dealOpeningCards();
 }
 
 function nextPlayerTurn(){
@@ -735,6 +759,7 @@ function finishRound(){
 
 /* ---------------- Controls ---------------- */
 document.getElementById("dealBtn").addEventListener("click", startRound);
+document.getElementById("redealBtn").addEventListener("click", redealSameShoe);
 document.getElementById("hitBtn").addEventListener("click", playerHit);
 document.getElementById("standBtn").addEventListener("click", playerStand);
 document.getElementById("doubleBtn").addEventListener("click", playerDouble);
