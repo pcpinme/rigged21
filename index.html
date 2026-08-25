@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rigged 21</title>
+<!-- Google AdSense: replace ca-pub-XXXXXXXXXXXXXXXX below with your real publisher ID
+     from the AdSense dashboard. Ads will not render until this file is hosted on a
+     real, AdSense-approved domain — this script does nothing on a local file or in
+     a preview environment. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2020918748746440" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500;700;900&family=Special+Elite&display=swap" rel="stylesheet">
 <style>
@@ -218,6 +223,10 @@
     text-align:center; margin-top:14px; font-family:"Special Elite", monospace;
     font-size:11px; color:var(--paper-dark); letter-spacing:1px; opacity:0.7;
   }
+  .ad-slot{
+    margin-top:16px; min-height:90px;
+    display:flex; align-items:center; justify-content:center;
+  }
 </style>
 </head>
 <body>
@@ -319,7 +328,19 @@
     <p>This only turns a guaranteed loss into a smaller chance of winning — it never makes the odds favor the player. On an honest shoe (low Pit Boss Aggression), basic strategy is still the mathematically correct play, exactly like real blackjack; deviating there just costs more on average. The only real fix for the table as a whole is turning Pit Boss Aggression down.</p>
   </div>
 
-  <div class="credit">Developed by Paul Pham, Copyright 2026 - For entertainment purposes only.</div>
+  <div class="credit">Developed by Paul Pham · © 2026 · For entertainment purposes only</div>
+
+  <!-- Ad unit: replace data-ad-slot below with your real slot ID from the AdSense
+       dashboard (create the ad unit there first). Placed at the very bottom, away
+       from Hit/Stand/Double, to avoid accidental clicks near game controls. -->
+  <div class="ad-slot">
+    <ins class="adsbygoogle"
+      style="display:block"
+      data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+      data-ad-slot="XXXXXXXXXX"
+      data-ad-format="auto"
+      data-full-width-responsive="true"></ins>
+  </div>
 
 </div>
 
@@ -739,6 +760,13 @@ document.getElementById("revealToggle").addEventListener("click", ()=>{
 });
 
 setNumPlayers(2);
+
+// Requests the ad for the slot above. Safe to leave in even before you've set
+// real IDs — it just won't produce a filled ad until the placeholders above
+// are replaced and the page is live on an AdSense-approved domain.
+try{
+  (window.adsbygoogle = window.adsbygoogle || []).push({});
+}catch(e){ /* no-op until real AdSense IDs + hosting are in place */ }
 </script>
 </body>
 </html>
